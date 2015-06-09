@@ -314,9 +314,15 @@ var XLT = function () {
         deleteFolderRecursive(testClassesDir);
     };
 
+    /**
+     * Cleans all temporary files and directories.
+     *
+     */
     XLT.prototype.clean = function () {
         XLT.prototype.deleteTestCaseDirectory();
         deleteFile(sourceFilePath);
+        deleteFolderRecursive(libDir);
+        deleteFolderRecursive(nodePath.join(baseDir, 'results'));
     }
 };
 

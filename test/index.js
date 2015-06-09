@@ -11,7 +11,8 @@ var should = require('chai').should(),
     deleteTestCaseDirectory = xlt.deleteTestCaseDirectory,
     compileAllTestCases = xlt.compileAllTestCases,
     runAllTestCases = xlt.runAllTestCases,
-    runSingleTestCase = xlt.runSingleTestCase;
+    runSingleTestCase = xlt.runSingleTestCase,
+    clean = xlt.clean;
 
 var testOptions = {
     baseDir: './test/',
@@ -28,6 +29,16 @@ describe('#setOptions', function () {
         fun.should.not.throw(Error);
     });
 });
+
+describe('#clean', function () {
+    it('cleans all temporary files and directories', function () {
+        var fun = function () {
+            clean();
+        };
+        fun.should.not.throw(Error);
+    });
+});
+
 
 describe('#downloadXlt', function () {
     this.timeout(60000);
