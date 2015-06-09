@@ -2,6 +2,7 @@ var should = require('chai').should(),
     xlt = require('../index'),
     javaVersion = xlt.javaVersion,
     setOptions = xlt.setOptions,
+    downloadXlt = xlt.downloadXlt,
     checkPrerequisites = xlt.checkPrerequisites,
     findFilesWithPattern = xlt.findFilesWithPattern,
     findTestCaseClasses = xlt.findTestCaseClasses,
@@ -14,11 +15,6 @@ var should = require('chai').should(),
 
 var testOptions = {
     baseDir: './test/',
-    testSrcDir: 'src/',
-    testClassesDir: 'classes/',
-    testCasesJava: '**/T*.java',
-    testCasesClass: '**/T*.class',
-    pathToXLT: '../../../XLT-4.5.3',
     commandPrefix: 'cd test && ',
     pathToScriptDir: 'node-xlt'
 };
@@ -33,6 +29,16 @@ describe('#setOptions', function () {
     });
 });
 
+describe('#downloadXlt', function () {
+    this.timeout(60000);
+    it('downloads xlt', function (done) {
+        downloadXlt(function (err, res) {
+            should.equal(err, null);
+            res.should.be.equal('test/lib/xlt-4.5.4');
+            done();
+        });
+    });
+});
 
 describe('#checkPrerequisites', function () {
     it('it awaits an error if the xlt directory can\'t be found', function () {
@@ -44,7 +50,7 @@ describe('#checkPrerequisites', function () {
     });
 
     it('it awaits an error if the sources directory can\'t be found', function () {
-        setOptions({pathToXLT: '../../../XLT-4.5.3', testSrcDir: 'notExistingDirectory'});
+        setOptions({pathToXLT: 'lib/xlt-4.5.4', testSrcDir: 'notExistingDirectory'});
         var res = false, fun = function () {
             res = checkPrerequisites();
         };
@@ -154,7 +160,7 @@ describe('#runAllTestCases', function () {
 
 describe('#runSingleTestCase', function () {
     this.timeout(0);
-    it('runs TAccount_CreateAccount test case', function () {
+    it('runs TVisitXceptance test case', function () {
         var res = false, fun = function () {
             res = runSingleTestCase('tests.demo.TVisitXceptance');
         };
@@ -162,9 +168,9 @@ describe('#runSingleTestCase', function () {
         res.should.be.true;
     });
 
-    it('runs TSearch_NoResults test case changing the web driver to phantomJs', function () {
+    it('runs TVisitXceptance test case changing the web driver to firefox_clientperformance', function () {
         var res = false, fun = function () {
-            res = runSingleTestCase('tests.demo.TVisitXceptance', {xltWebDriver: 'phantomJs'});
+            res = runSingleTestCase('tests.demo.TVisitXceptance', {xltWebDriver: 'firefox_clientperformance'});
         };
         fun.should.not.throw(Error);
         res.should.be.true;

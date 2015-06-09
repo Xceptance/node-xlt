@@ -6,49 +6,69 @@ var nodePath = require('path');
 
 var XLT = function () {
 
-    var baseDir = './';
-    var testSrcDir = nodePath.join(baseDir, 'src');
+
+    //internal
     var targetDir = 'classes';
+    var sourcesDir = 'src';
+
+    //available via options
+    var baseDir = './';
+    var testSrcDir = nodePath.join(baseDir, sourcesDir);
     var testClassesDir = nodePath.join(baseDir, targetDir);
     var testCasesJava = '**/T*.java';
     var testCasesClass = '**/T*.class';
-    var xltLibDir = 'lib/*';
-    var pathToXLT = '../XLT-4.5.3';
-    var xltLibPath = nodePath.join(pathToXLT , xltLibDir);
+    var pathToXLT = 'lib/xlt-4.5.4';
     var log4jProperties = 'config/js-log4j.properties';
     var pathToScriptDir = '';
     var commandPrefix = '';
     var xltWebDriver;
-    var fName = 'sources.txt';
+    var xltVersion = '4.5.4';
+
+    //internal
+    var xltLibDir = 'lib/*';
+    var xltLibPath = nodePath.join(pathToXLT, xltLibDir);
+    var sourceFileName = 'sources.txt';
+    var sourceFilePath = nodePath.join(baseDir, sourceFileName);
+    var libDir = nodePath.join(baseDir, 'lib');
+
 
     /**
      * Generates the parameters for the java environment to be added during the run of the test case.
      *
      * @param  {Object} options
-     * @param  {String} options.baseDir
-     * @param  {String} options.pathToXLT
-     * @param  {String} options.testSrcDir
-     * @param  {String} options.testClassesDir
-     * @param  {String} options.testCasesJava
-     * @param  {String} options.testCasesClass
-     * @param  {String} options.log4jProperties
-     * @param  {String} options.xltWebDriver
-     * @param  {String} options.commandPrefix
-     * @param  {String} options.pathToScriptDir
+     * @param  {String} [options.baseDir]
+     * @param  {String} [options.pathToXLT]
+     * @param  {String} [options.testSrcDir]
+     * @param  {String} [options.testClassesDir]
+     * @param  {String} [options.testCasesJava]
+     * @param  {String} [options.testCasesClass]
+     * @param  {String} [options.log4jProperties]
+     * @param  {String} [options.xltWebDriver]
+     * @param  {String} [options.commandPrefix]
+     * @param  {String} [options.pathToScriptDir]
+     * @param  {String} [options.xltVersion]
      */
     XLT.prototype.setOptions = function (options) {
         if (options) {
-            baseDir = options.baseDir || baseDir;
-            pathToXLT =  options.pathToXLT ? options.pathToXLT : pathToXLT;
-            xltLibPath = options.pathToXLT ? nodePath.join(pathToXLT , xltLibDir) : xltLibPath;
-            testSrcDir = options.testSrcDir ? nodePath.join(baseDir, options.testSrcDir) : testSrcDir;
+            //baseDir dependent
+            baseDir = options.baseDir ? options.baseDir : baseDir;
+            sourceFilePath = options.baseDir ? nodePath.join(baseDir, sourceFileName) : sourceFilePath;
+            libDir = options.baseDir ? nodePath.join(baseDir, libDir) : libDir;
+            testClassesDir = options.baseDir ? nodePath.join(baseDir, targetDir) : testClassesDir;
             testClassesDir = options.testClassesDir ? nodePath.join(baseDir, options.testClassesDir) : testClassesDir;
+            testSrcDir = options.baseDir ? nodePath.join(baseDir, sourcesDir) : testSrcDir;
+            testSrcDir = options.testSrcDir ? nodePath.join(baseDir, options.testSrcDir) : testSrcDir;
+
+            //baseDir independent
+            pathToXLT = options.pathToXLT ? options.pathToXLT : pathToXLT;
+            xltLibPath = options.pathToXLT ? nodePath.join(pathToXLT, xltLibDir) : xltLibPath;
             testCasesJava = options.testCasesJava || testCasesJava;
             testCasesClass = options.testCasesClass || testCasesClass;
             log4jProperties = options.log4jProperties || log4jProperties;
-            commandPrefix = options.commandPrefix ?  options.commandPrefix : commandPrefix;
-            pathToScriptDir = options.pathToScriptDir ?  options.pathToScriptDir : pathToScriptDir;
+            commandPrefix = options.commandPrefix ? options.commandPrefix : commandPrefix;
+            pathToScriptDir = options.pathToScriptDir ? options.pathToScriptDir : pathToScriptDir;
             xltWebDriver = options.xltWebDriver;
+            xltVersion = options.xltVersion ? options.xltVersion : xltVersion;
         }
     };
 
@@ -78,14 +98,42 @@ var XLT = function () {
     };
 
     /**
+     * Downloads (asynchronous) Xlt (default version 4.5.4) into the project directory and unpacks it.
+     *
+     * @param {function} callback(error, pathToXlt)
+     */
+    XLT.prototype.downloadXlt = function (callback) {
+        var dest = nodePath.join(libDir, 'xlt-' + xltVersion + '.zip');
+
+        deleteFolderRecursive(libDir);
+        fs.mkdirSync(libDir);
+
+        var file = fs.createWriteStream(dest);
+        require('https').get('https://lab.xceptance.de/releases/xlt/' + xltVersion + '/xlt-' + xltVersion + '.zip', function (response) {
+            response.pipe(file);
+            file.on('finish', function () {
+                file.close(function () {
+                    var AdmZip = require('adm-zip');
+                    new AdmZip(dest).extractAllTo(libDir, true);
+                    callback(null, nodePath.join(libDir, 'xlt-' + xltVersion));
+                });
+            });
+        }).on('error', function (error) {
+            fs.unlink(dest);
+            if (callback) callback(error);
+        });
+    };
+
+    /**
      * Compiles all test cases one after the other and returns true if all compiled.
      *
      * @return {Boolean}
      */
     XLT.prototype.checkPrerequisites = function () {
-        if(!fs.existsSync(nodePath.join( baseDir,pathToXLT))){
+        if (!fs.existsSync(nodePath.join(baseDir, pathToXLT))) {
             throw new Error('XLT directory could not be found with the given path');
-        } else if(!fs.existsSync(testSrcDir)){
+        } else if (!fs.existsSync(testSrcDir)) {
+            console.log(testSrcDir);
             throw new Error('Directory of the java sources could not be found with the given path');
         }
         return true;
@@ -97,23 +145,23 @@ var XLT = function () {
      * @return {Boolean}
      */
     XLT.prototype.compileAllTestCases = function () {
-
+        fs.mkdirSync(testClassesDir);
         var data = '';
         var files = XLT.prototype.findTestCaseJavas();
         for (var file in files) {
             if (files.hasOwnProperty(file)) {
                 var rep = nodePath.join(baseDir);
-                var name = files[file].replace( rep, '');
+                var name = files[file].replace(rep, '');
                 data += name + '\n';
             }
         }
-        fs.writeFileSync(nodePath.join(baseDir, fName), data);
+        fs.writeFileSync(sourceFilePath, data);
 
         var exec = require('child_process').execSync;
-        var command =  commandPrefix + 'javac -classpath "'+xltLibPath+'" -d ' + targetDir + ' @' + nodePath.join( fName );
+        var command = commandPrefix + 'javac -classpath "' + xltLibPath + '" -d ' + targetDir + ' @' + nodePath.join(sourceFileName);
         exec(command);
 
-        deleteFile(nodePath.join(baseDir, fName));
+        deleteFile(sourceFilePath);
         return true;
     };
 
@@ -124,12 +172,12 @@ var XLT = function () {
      * @return {Boolean}
      */
     XLT.prototype.compileSingleTestCase = function (path) {
+        fs.mkdirSync(testClassesDir);
         var exec = require('child_process').execSync;
-        var command =  commandPrefix + 'javac -classpath "'+xltLibPath+'" -d ' + targetDir + ' ' + path;
+        var command = commandPrefix + 'javac -classpath "' + xltLibPath + '" -d ' + targetDir + ' ' + path;
         exec(command);
         return true;
     };
-
 
     /**
      * Runs all compiled test cases one after the other and returns true if all return true.
@@ -144,7 +192,7 @@ var XLT = function () {
         var files = XLT.prototype.findTestCaseClasses();
         for (var file in files) {
             if (files.hasOwnProperty(file)) {
-                var reg = new RegExp('.*'+ targetDir +'\/');
+                var reg = new RegExp('.*' + targetDir + '\/');
                 var name = files[file].replace(reg, '').replace('.class', '').replace(/\//g, '.');
                 result = result && XLT.prototype.runSingleTestCase(name, params);
             }
@@ -163,7 +211,7 @@ var XLT = function () {
      */
     XLT.prototype.runSingleTestCase = function (path, params) {
         var exec = require('child_process').execSync;
-        var command = commandPrefix + 'java ' + generateRunParamsString(params) + ' -cp "'+xltLibPath+':'+targetDir+':config" org.junit.runner.JUnitCore ' + path;
+        var command = commandPrefix + 'java ' + generateRunParamsString(params) + ' -cp "' + xltLibPath + ':' + targetDir + ':config" org.junit.runner.JUnitCore ' + path;
         console.log(command);
         var cli = exec(command).toString();
         return /OK \(\d* test\)/.test(cli);
@@ -203,7 +251,7 @@ var XLT = function () {
         } else if (!pattern) {
             throw new Error('No pattern given.');
         } else {
-            return glob.sync(baseDirectory + pattern);
+            return glob.sync(nodePath.join(baseDirectory , pattern));
         }
     };
 
@@ -225,13 +273,10 @@ var XLT = function () {
         return XLT.prototype.findFilesWithPattern(testClassesDir, testCasesClass);
     };
 
-    /**
-     * Deletes a file with the given path.
-     *
-     * @param  {String} path
-     */
     function deleteFile(path) {
-        fs.unlinkSync(path);
+        if (fs.existsSync(path)) {
+            fs.unlinkSync(path)
+        }
     }
 
     function deleteFolderRecursive(path) {
@@ -261,19 +306,17 @@ var XLT = function () {
         }
     };
 
-
     /**
      * Deletes all test case class files path.
      *
      */
     XLT.prototype.deleteTestCaseDirectory = function () {
         deleteFolderRecursive(testClassesDir);
-        fs.mkdirSync(testClassesDir);
     };
 
     XLT.prototype.clean = function () {
-        this.deleteTestCaseDirectory();
-        //this.deleteFile()
+        XLT.prototype.deleteTestCaseDirectory();
+        deleteFile(sourceFilePath);
     }
 };
 
