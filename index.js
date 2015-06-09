@@ -190,14 +190,6 @@ var XLT = function () {
         return res;
     }
 
-//TODO implement me
-    XLT.prototype.generateReport = function () {
-        var exec = require('child_process').execSync;
-        var command =  commandPrefix + 'javac -classpath "'+xltLibPath+'" -d ' +  targetDir + ' ';
-        exec(command);
-        return true;
-    };
-
     /**
      * Searches for files matching the given pattern starting from the given base directory.
      *
