@@ -12,7 +12,8 @@ var should = require('chai').should(),
     compileAllTestCases = xlt.compileAllTestCases,
     runAllTestCases = xlt.runAllTestCases,
     runSingleTestCase = xlt.runSingleTestCase,
-    clean = xlt.clean;
+    complete = xlt.complete;
+clean = xlt.clean;
 
 var testOptions = {
     baseDir: './test/',
@@ -41,13 +42,16 @@ describe('#clean', function () {
 
 
 describe('#downloadXlt', function () {
-    this.timeout(60000);
+    this.timeout(0);
     it('downloads xlt', function (done) {
-        downloadXlt(function (err, res) {
-            should.equal(err, null);
-            res.should.be.equal('test/lib/xlt-4.5.4');
-            done();
-        });
+        var fun = function () {
+            downloadXlt(function (err, res) {
+                should.equal(err, null);
+                res.should.be.equal('test/lib/xlt-4.5.4');
+                done();
+            });
+        };
+        fun.should.not.throw(Error);
     });
 });
 
@@ -80,10 +84,13 @@ describe('#checkPrerequisites', function () {
 
 describe('#javaVersion', function () {
     it('checks if Java greater 1.7 is installed', function (done) {
-        javaVersion(function (err, res) {
-            parseFloat(res).should.least(1.7);
-            done();
-        });
+        var fun = function () {
+            javaVersion(function (err, res) {
+                parseFloat(res).should.least(1.7);
+                done();
+            });
+        };
+        fun.should.not.throw(Error);
     });
 });
 
@@ -200,6 +207,19 @@ describe('#deleteAllTestCaseClasses', function () {
     it('removes xlt test case classes', function () {
         var fun = function () {
             deleteAllTestCaseClasses()
+        };
+        fun.should.not.throw(Error);
+    });
+});
+
+
+describe('#complete', function () {
+    this.timeout(0);
+    it('runs the whole process', function (done) {
+        var fun = function () {
+            complete(function () {
+                done();
+            });
         };
         fun.should.not.throw(Error);
     });

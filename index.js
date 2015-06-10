@@ -323,12 +323,33 @@ var XLT = function () {
     /**
      * Cleans all temporary files and directories.
      *
+     * @param {Boolean} [excludeXlt]
      */
-    XLT.prototype.clean = function () {
+    XLT.prototype.clean = function (excludeXlt) {
         XLT.prototype.deleteTestCaseDirectory();
         deleteFile(sourceFilePath);
-        deleteFolderRecursive(libDir);
+        if(excludeXlt !== true) {
+            deleteFolderRecursive(libDir);
+        }
         deleteFolderRecursive(nodePath.join(baseDir, 'results'));
+    };
+
+    /**
+     * Cleans all temporary files and directories.
+     *
+     * @param {function} callback()
+     */
+    XLT.prototype.complete = function (callback) {
+        XLT.prototype.javaVersion(function(err, vers){
+           if(vers && parseFloat(vers)) {
+               if(XLT.prototype.checkPrerequisites()){
+                   XLT.prototype.clean(true);
+                   XLT.prototype.compileAllTestCases();
+                   XLT.prototype.runAllTestCases();
+                   callback();
+               }
+           }
+        });
     }
 };
 
