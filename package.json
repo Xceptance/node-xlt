@@ -1,19 +1,34 @@
 {
   "name": "node-xlt",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "This module will wrap functionality to compile and execute junit testcase created for XLT.",
   "main": "index.js",
   "scripts": {
     "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Xceptance/node-xlt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Xceptance/node-xlt/issues"
   },
   "keywords": [
     "software",
     "test",
     "xlt"
   ],
-  "author": "Xceptance GmbH",
-  "license": "MIT",
-  "devDependencies": {
+  "author": {
+    "name": "Xceptance GmbH",
+    "url": "https://www.xceptance.com"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/Xceptance/node-xlt/blob/master/LICENSE"
+    }
+  ],
+  "dependencies": {
     "adm-zip": "^0.4.7",
     "chai": "^2.3.0",
     "glob": "^5.0.10",
