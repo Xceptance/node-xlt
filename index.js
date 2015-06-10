@@ -106,7 +106,7 @@ var XLT = function () {
         var dest = nodePath.join(libDir, 'xlt-' + xltVersion + '.zip');
 
         deleteFolderRecursive(libDir);
-        fs.mkdirSync(libDir);
+        createDirectory(libDir);
 
         var file = fs.createWriteStream(dest);
         require('https').get('https://lab.xceptance.de/releases/xlt/' + xltVersion + '/xlt-' + xltVersion + '.zip', function (response) {
@@ -145,7 +145,7 @@ var XLT = function () {
      * @return {Boolean}
      */
     XLT.prototype.compileAllTestCases = function () {
-        fs.mkdirSync(testClassesDir);
+        createDirectory(testClassesDir);
         var data = '';
         var files = XLT.prototype.findTestCaseJavas();
         for (var file in files) {
@@ -172,7 +172,7 @@ var XLT = function () {
      * @return {Boolean}
      */
     XLT.prototype.compileSingleTestCase = function (path) {
-        fs.mkdirSync(testClassesDir);
+        createDirectory(testClassesDir);
         var exec = require('child_process').execSync;
         var command = commandPrefix + 'javac -classpath "' + xltLibPath + '" -d ' + targetDir + ' ' + path;
         exec(command);
@@ -251,7 +251,7 @@ var XLT = function () {
         } else if (!pattern) {
             throw new Error('No pattern given.');
         } else {
-            return glob.sync(nodePath.join(baseDirectory , pattern));
+            return glob.sync(nodePath.join(baseDirectory, pattern));
         }
     };
 
@@ -273,9 +273,15 @@ var XLT = function () {
         return XLT.prototype.findFilesWithPattern(testClassesDir, testCasesClass);
     };
 
+    function createDirectory(path) {
+        if (!fs.existsSync(path)) {
+            fs.mkdirSync(path);
+        }
+    }
+
     function deleteFile(path) {
         if (fs.existsSync(path)) {
-            fs.unlinkSync(path)
+            fs.unlinkSync(path);
         }
     }
 
