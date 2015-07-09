@@ -10,7 +10,7 @@ NodeJS support for Xceptance LoadTest.
   var xlt = require('node-xlt');
   
   // adjust this path to your local installation of Xlt
-  xlt.setOptions({pathToXLT: '../xlt-4.5.3'});
+  xlt.setOptions({pathToXLT: '../xlt-4.5.4'});
   
   //you can also use our download feature if you have no installation of Xlt
   xlt.downloadXlt();
@@ -31,6 +31,9 @@ NodeJS support for Xceptance LoadTest.
   
   // or you can call a single test case (you need to provide the path and name)
   xlt.runSingleTestCase('tests.demo.TVisitXceptance');
+  
+  // if running your test suite take to much time and you tests are independent of each other you can call them in a parallel mode
+  xlt.runAllTestCasesParallel({xltWebDriver: "chrome"}, function(res){console.log("All tests run without errors: " + res)});
   
   // you can remove all the data created from compiling and the test runs  
   xlt.clean();
