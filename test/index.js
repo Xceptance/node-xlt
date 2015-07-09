@@ -12,13 +12,18 @@ var should = require('chai').should(),
     compileAllTestCases = xlt.compileAllTestCases,
     runAllTestCases = xlt.runAllTestCases,
     runSingleTestCase = xlt.runSingleTestCase,
+    runTestCasesParallel = xlt.runTestCasesParallel,
+    runAllTestCasesParallel = xlt.runAllTestCasesParallel,
+    runSingleTestCaseAsync = xlt.runSingleTestCaseAsync,
     complete = xlt.complete;
 clean = xlt.clean;
 
 var testOptions = {
     baseDir: './test/',
     commandPrefix: 'cd test && ',
-    pathToScriptDir: 'node-xlt'
+    pathToScriptDir: 'node-xlt',
+    xltWidth: 400,
+    xltHeight: 300
 };
 
 
@@ -32,6 +37,7 @@ describe('#setOptions', function () {
 });
 
 describe('#clean', function () {
+    this.timeout(0);
     it('cleans all temporary files and directories', function () {
         var fun = function () {
             clean();
@@ -119,7 +125,7 @@ describe('#findFilesWithPattern', function () {
     });
 
     it('finds two java test cases in this folder and its subfolders', function () {
-        findFilesWithPattern('./test/src/', '**/*.java').length.should.equal(2);
+        findFilesWithPattern('./test/src/', '**/*.java').length.should.equal(22);
     });
 
     it('returns error on "" as project folder', function () {
@@ -195,6 +201,175 @@ describe('#runSingleTestCase', function () {
     });
 });
 
+
+describe('#parallel', function(){
+    this.timeout(0);
+
+    it('calls one test async', function(done){
+        var fun = function () {
+            runSingleTestCaseAsync('tests.demo.TVisitXceptance', null, function (err, res) {
+                res.should.be.true;
+                done();
+            });
+        };
+        fun.should.not.throw(Error);
+    });
+
+    it('calls all tests async', function(done){
+        var params = {
+            'xltWebDriver': 'chrome',
+            'xltWidth': 800,
+            'xltHeight': 600,
+            'patterns': {
+                'test.*TVisitWait1.*': 'firefox',
+                'test.*TVisitWait2.*': 'phantomjs'
+            }
+        };
+        var fun = function () {
+            runAllTestCasesParallel(params, function (res) {
+                res.should.be.true;
+                done();
+            });
+        };
+        fun.should.not.throw(Error);
+    });
+
+    it('calls some tests async', function(done){
+        var fun = function () {
+            var tests = [
+                {
+                    'path': 'tests.demo.TVisitWait10SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'firefox',
+                        'xltWidth': 400,
+                        'xltHeight': 300
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait10SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'chrome',
+                        'xltWidth': 450,
+                        'xltHeight': 350
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait11SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'firefox',
+                        'xltWidth': 500,
+                        'xltHeight': 400
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait11SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'chrome',
+                        'xltWidth': 550,
+                        'xltHeight': 450
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait12SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'firefox',
+                        'xltWidth': 600,
+                        'xltHeight': 500
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait12SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'chrome',
+                        'xltWidth': 650,
+                        'xltHeight': 550
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait13SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'firefox',
+                        'xltWidth': 700,
+                        'xltHeight': 600
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait13SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'chrome',
+                        'xltWidth': 750,
+                        'xltHeight': 650
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait14SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'firefox',
+                        'xltWidth': 800,
+                        'xltHeight': 700
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait14SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'chrome',
+                        'xltWidth': 850,
+                        'xltHeight': 750
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait15SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'firefox',
+                        'xltWidth': 900,
+                        'xltHeight': 800
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait15SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'chrome',
+                        'xltWidth': 950,
+                        'xltHeight': 850
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait16SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'firefox',
+                        'xltWidth': 1000,
+                        'xltHeight': 900
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait16SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'chrome',
+                        'xltWidth':1000
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait17SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'firefox',
+                        'xltHeight': 1000
+                    }
+                },
+                {
+                    'path': 'tests.demo.TVisitWait17SecondXceptance',
+                    'params': {
+                        'xltWebDriver': 'chrome'
+                    }
+                }
+            ];
+            runTestCasesParallel(tests, function (res) {
+                res.should.be.true;
+                done();
+            });
+        };
+        fun.should.not.throw(Error);
+    });
+});
 
 describe('#findTestCaseClasses', function () {
     it('finds xlt test case classes in project folder', function () {

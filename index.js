@@ -6,7 +6,6 @@ var nodePath = require('path');
 
 var XLT = function () {
 
-
     //internal
     var targetDir = 'classes';
     var sourcesDir = 'src';
@@ -21,7 +20,7 @@ var XLT = function () {
     var log4jProperties = 'config/js-log4j.properties';
     var pathToScriptDir = '';
     var commandPrefix = '';
-    var xltWebDriver;
+    var xltWebDriver, xltWidth, xltHeight;
     var xltVersion = '4.5.4';
 
     //internal
@@ -30,7 +29,6 @@ var XLT = function () {
     var sourceFileName = 'sources.txt';
     var sourceFilePath = nodePath.join(baseDir, sourceFileName);
     var libDir = nodePath.join(baseDir, 'lib');
-
 
     /**
      * Generates the parameters for the java environment to be added during the run of the test case.
@@ -44,6 +42,8 @@ var XLT = function () {
      * @param  {String} [options.testCasesClass]
      * @param  {String} [options.log4jProperties]
      * @param  {String} [options.xltWebDriver]
+     * @param  {Number} [options.xltWidth]
+     * @param  {Number} [options.xltHeight]
      * @param  {String} [options.commandPrefix]
      * @param  {String} [options.pathToScriptDir]
      * @param  {String} [options.xltVersion]
@@ -67,7 +67,9 @@ var XLT = function () {
             log4jProperties = options.log4jProperties || log4jProperties;
             commandPrefix = options.commandPrefix ? options.commandPrefix : commandPrefix;
             pathToScriptDir = options.pathToScriptDir ? options.pathToScriptDir : pathToScriptDir;
-            xltWebDriver = options.xltWebDriver;
+            xltWebDriver = options.xltWebDriver ? options.xltWebDriver : null;
+            xltWidth = options.xltWidth ? options.xltWidth : null;
+            xltHeight = options.xltHeight ? options.xltHeight : null;
             xltVersion = options.xltVersion ? options.xltVersion : xltVersion;
         }
     };
@@ -179,11 +181,14 @@ var XLT = function () {
         return true;
     };
 
+
     /**
      * Runs all compiled test cases one after the other and returns true if all return true.
      *
      * @param  {Object} [params]
      * @param  {String} [params.xltWebDriver]
+     * @param  {Number} [params.xltHeight]
+     * @param  {Number} [params.xltWidth]
      * @param  {String} [params.log4jProperties]
      * @return {Boolean}
      */
@@ -206,6 +211,8 @@ var XLT = function () {
      * @param  {String} path
      * @param  {Object} [params]
      * @param  {String} [params.xltWebDriver]
+     * @param  {Number} [params.xltWidth]
+     * @param  {Number} [params.xltHeight]
      * @param  {String} [params.log4jProperties]
      * @return {Boolean}
      */
@@ -217,11 +224,138 @@ var XLT = function () {
         return /OK \(\d* test\)/.test(cli);
     };
 
+    var maxProcesses = 1;
+    var currentProcesses = 0;
+    var parallelResult = true;
+    var parallelTests = [];
+
+    function resetParallelTestSettings() {
+        maxProcesses = 1;
+        currentProcesses = 0;
+        parallelResult = true;
+        parallelTests = [];
+    }
+
+    /**
+     * Runs all compiled test cases one after the other and returns true if all return true.
+     *
+     * @param  {Object} [params]
+     * @param  {String} [params.xltWebDriver]
+     * @param  {Number} [params.xltWidth]
+     * @param  {Number} [params.xltHeight]
+     * @param  {String} [params.log4jProperties]
+     * @param  {Object} [params.patterns]
+     * @param  {function} [callback(result)]
+     */
+    XLT.prototype.runAllTestCasesParallel = function (params, callback) {
+        resetParallelTestSettings();
+        var testCases = XLT.prototype.findTestCaseClasses();
+        for (var testCase in testCases) {
+            if (testCases.hasOwnProperty(testCase)) {
+                var test = {
+                    path: testCases[testCase],
+                    params: {
+                        xltWebDriver: params ? params.xltWebDriver : null,
+                        xltWidth: params ? params.xltWidth : null,
+                        xltHeight: params ? params.xltHeight : null,
+                        log4jProperties: params ? params.log4jProperties : null
+                    }
+                };
+                if (params && params.patterns) {
+                    for (var pattern in params.patterns) {
+                        if (params.patterns.hasOwnProperty(pattern)) {
+                            if (test.path.match(pattern)) {
+                                test.params = params.patterns[pattern];
+                            }
+                        }
+                    }
+                }
+                parallelTests.push(test);
+            }
+        }
+        maxProcesses = require('os').cpus().length;
+        runParallel(callback);
+    };
+
+    /**
+     * Runs all compiled test cases one after the other and returns true if all return true.
+     *
+     * @param  {Array<TestCase>} testCases
+     * @param  {TestCase} [testCase]
+     * @param  {String} [testCase.path]
+     * @param  {Object} [testCase.params]
+     * @param  {String} [testCase.params.xltWebDriver]
+     * @param  {Number} [testCase.params.xltWidth]
+     * @param  {Number} [testCase.params.xltHeight]
+     * @param  {String} [testCase.params.log4jProperties]
+     * @param  {function} [callback(result)]
+     */
+    XLT.prototype.runTestCasesParallel = function (testCases, callback) {
+        resetParallelTestSettings();
+        if (testCases) {
+            parallelTests = testCases;
+        }
+        maxProcesses = require('os').cpus().length;
+        runParallel(callback);
+    };
+
+
+    function runParallel(callback) {
+        if (currentProcesses < maxProcesses && parallelTests.length > 0) {
+            while (currentProcesses < maxProcesses && parallelTests.length > 0) {
+                var test = parallelTests.pop();
+                var reg = new RegExp('.*' + targetDir + '\/');
+                var name = test.path.replace(reg, '').replace('.class', '').replace(/\//g, '.');
+                XLT.prototype.runSingleTestCaseAsync(name, test.params, function (error, res) {
+                    parallelResult = parallelResult && res;
+                    currentProcesses--;
+                    if (error) {
+                        console.log(error);
+                    }
+                    runParallel(callback)
+                });
+                currentProcesses++;
+            }
+        } else {
+            if (parallelTests.length == 0 && currentProcesses == 0) {
+                callback(parallelResult);
+            }
+        }
+    }
+
+    /**
+     * Runs the compiled test case with the given the name including the package (e.g. "java.lang.String") and returns true if it is successful.
+     *
+     * @param  {String} path
+     * @param  {Object} [params]
+     * @param  {String} [params.xltWebDriver]
+     * @param  {Number} [params.xltWidth]
+     * @param  {Number} [params.xltHeight]
+     * @param  {String} [params.log4jProperties]
+     * @param  {function} [callback(result, error)]
+     */
+    XLT.prototype.runSingleTestCaseAsync = function (path, params, callback) {
+        var exec = require('child_process').exec;
+        var command = commandPrefix + 'java ' + generateRunParamsString(params) + ' -cp "' + xltLibPath + ':' + targetDir + ':config" org.junit.runner.JUnitCore ' + path;
+        exec(command, function (error, stdout, stderr) {
+            console.log(command);
+            console.log(stdout);
+            if (error !== null) {
+                console.log('Error: ' + stderr);
+                callback(error, false);
+            } else {
+                callback(null, /OK \(\d* test\)/.test(stdout));
+            }
+        });
+    };
+
     /**
      * Generates the parameters for the java environment to be added during the run of the test case.
      *
      * @param  {Object} params
      * @param  {String} params.xltWebDriver
+     * @param  {Number} params.xltWidth
+     * @param  {Number} params.xltHeight
      * @param  {String} params.log4jProperties
      * @return {String}
      */
@@ -230,6 +364,14 @@ var XLT = function () {
         var webDriver = params && params.xltWebDriver ? params.xltWebDriver : xltWebDriver;
         if (webDriver) {
             res += ' -Dxlt.webDriver="' + webDriver + '"';
+        }
+        var width = params && params.xltWidth ? params.xltWidth : xltWidth;
+        if (width) {
+            res += ' -Dxlt.webDriver.window.width="' + width + '"';
+        }
+        var height = params && params.xltHeight ? params.xltHeight : xltHeight;
+        if (height) {
+            res += ' -Dxlt.webDriver.window.height="' + height + '"';
         }
         var log4jProp = params && params.log4jProperties ? params.log4jProperties : log4jProperties;
         if (log4jProp) {
@@ -328,7 +470,7 @@ var XLT = function () {
     XLT.prototype.clean = function (excludeXlt) {
         XLT.prototype.deleteTestCaseDirectory();
         deleteFile(sourceFilePath);
-        if(excludeXlt !== true) {
+        if (excludeXlt !== true) {
             deleteFolderRecursive(libDir);
         }
         deleteFolderRecursive(nodePath.join(baseDir, 'results'));
@@ -340,15 +482,15 @@ var XLT = function () {
      * @param {function} callback()
      */
     XLT.prototype.complete = function (callback) {
-        XLT.prototype.javaVersion(function(err, vers){
-           if(vers && parseFloat(vers)) {
-               if(XLT.prototype.checkPrerequisites()){
-                   XLT.prototype.clean(true);
-                   XLT.prototype.compileAllTestCases();
-                   XLT.prototype.runAllTestCases();
-                   callback();
-               }
-           }
+        XLT.prototype.javaVersion(function (err, vers) {
+            if (vers && parseFloat(vers)) {
+                if (XLT.prototype.checkPrerequisites()) {
+                    XLT.prototype.clean(true);
+                    XLT.prototype.compileAllTestCases();
+                    XLT.prototype.runAllTestCases();
+                    callback();
+                }
+            }
         });
     }
 };

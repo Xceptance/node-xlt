@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcase xmlns="http://xlt.xceptance.com/xlt-script/2" version="6" junit-test="true" baseURL="https://www.xceptance.com/en/">
+  <description>Visit website of xceptance</description>
+  <command name="open" value="https://www.xceptance.com/en/"/>
+  <action name="TVisitXceptance-0"/>
+  <command name="clickAndWait" target="//div[@id='navigation']/div/nav/div[2]/div/ul/li[2]/a"/>
+  <command name="pause" value="4000"/>
+  <command name="assertTextPresent" value="Test Automation"/>
+</testcase>
