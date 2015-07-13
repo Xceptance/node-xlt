@@ -286,14 +286,13 @@ var XLT = function () {
     /**
      * Runs all compiled test cases one after the other and returns true if all return true.
      *
-     * @param  {Array<TestCase>} testCases
-     * @param  {TestCase} [testCase]
-     * @param  {String} [testCase.path]
-     * @param  {Object} [testCase.params]
-     * @param  {String} [testCase.params.xltWebDriver]
-     * @param  {Number} [testCase.params.xltWidth]
-     * @param  {Number} [testCase.params.xltHeight]
-     * @param  {String} [testCase.params.log4jProperties]
+     * @param  {Object[]} testCases
+     * @param  {String} [testCases[].path]
+     * @param  {Object} [testCases[].params]
+     * @param  {String} [testCases[].params.xltWebDriver]
+     * @param  {Number} [testCases[].params.xltWidth]
+     * @param  {Number} [testCases[].params.xltHeight]
+     * @param  {String} [testCases[].params.log4jProperties]
      * @param  {function} [callback(result)]
      */
     XLT.prototype.runTestCasesParallel = function (testCases, callback) {
