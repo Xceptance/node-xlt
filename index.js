@@ -199,7 +199,7 @@ var XLT = function () {
             if (files.hasOwnProperty(file)) {
                 var reg = new RegExp('.*' + targetDir + '\/');
                 var name = files[file].replace(reg, '').replace('.class', '').replace(/\//g, '.');
-                result = result && XLT.prototype.runSingleTestCase(name, params);
+                result = XLT.prototype.runSingleTestCase(name, params) && result;
             }
         }
         return result;
@@ -220,8 +220,14 @@ var XLT = function () {
         var exec = require('child_process').execSync;
         var command = commandPrefix + 'java ' + generateRunParamsString(params) + ' -cp "' + xltLibPath + ':' + targetDir + ':config" org.junit.runner.JUnitCore ' + path;
         console.log(command);
-        var cli = exec(command).toString();
-        return /OK \(\d* test\)/.test(cli);
+        try {
+            var cli = exec(command).toString();
+            return /OK \(\d* test\)/.test(cli);
+        }
+        catch(err)
+        {
+            return false;
+        }
     };
 
     var maxProcesses = 1;
@@ -318,7 +324,9 @@ var XLT = function () {
             }
         } else {
             if (parallelTests.length == 0 && currentProcesses == 0) {
-                callback(parallelResult);
+                if (isFunction(callback)){
+                    callback(parallelResult);
+                }
             }
         }
     }
@@ -342,9 +350,13 @@ var XLT = function () {
             console.log(stdout);
             if (error !== null) {
                 console.log('Error: ' + stderr);
-                callback(error, false);
+                if (isFunction(callback)) {
+                    callback(error, false);
+                }
             } else {
-                callback(null, /OK \(\d* test\)/.test(stdout));
+                if (isFunction(callback)) {
+                    callback(null, /OK \(\d* test\)/.test(stdout));
+                }
             }
         });
     };
@@ -414,6 +426,10 @@ var XLT = function () {
     XLT.prototype.findTestCaseClasses = function () {
         return XLT.prototype.findFilesWithPattern(testClassesDir, testCasesClass);
     };
+
+    function isFunction(func) {
+        return typeof(func) == 'function';
+    }
 
     function createDirectory(path) {
         if (!fs.existsSync(path)) {
