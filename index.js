@@ -16,12 +16,12 @@ var XLT = function () {
     var testClassesDir = nodePath.join(baseDir, targetDir);
     var testCasesJava = '**/T*.java';
     var testCasesClass = '**/T*.class';
-    var pathToXLT = 'lib/xlt-4.5.4';
     var log4jProperties = 'config/js-log4j.properties';
     var pathToScriptDir = '';
     var commandPrefix = '';
     var xltWebDriver, xltWidth, xltHeight;
-    var xltVersion = '4.5.4';
+    var xltVersion = '4.5.5';
+    var pathToXLT = 'lib/xlt-4.5.5';
 
     //internal
     var xltLibDir = 'lib/*';
