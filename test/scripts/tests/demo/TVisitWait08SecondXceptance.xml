@@ -5,5 +5,5 @@
   <action name="TVisitXceptance-0"/>
   <command name="clickAndWait" target="//div[@id='navigation']/div/nav/div[2]/div/ul/li[2]/a"/>
   <command name="pause" value="8000"/>
-  <command name="assertTextPresent" value="Test Automation"/>
+  <command name="assertText" target="//div[@id='xlt-overview']/div[2]/div/div[1]/div/h2" value="Test Automation"/>
 </testcase>
