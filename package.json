@@ -1,6 +1,6 @@
 {
   "name": "node-xlt",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "This module will wrap functionality to compile and execute junit testcases created for XLT.",
   "main": "index.js",
   "scripts": {
