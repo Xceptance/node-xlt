@@ -20,8 +20,8 @@ var XLT = function () {
     var pathToScriptDir = '';
     var commandPrefix = '';
     var xltWebDriver, xltWidth, xltHeight;
-    var xltVersion = '4.5.5';
-    var pathToXLT = 'lib/xlt-4.5.5';
+    var xltVersion = '4.5.6';
+    var pathToXLT = 'lib/xlt-4.5.6';
 
     //internal
     var xltLibDir = 'lib/*';
@@ -29,6 +29,7 @@ var XLT = function () {
     var sourceFileName = 'sources.txt';
     var sourceFilePath = nodePath.join(baseDir, sourceFileName);
     var libDir = nodePath.join(baseDir, 'lib');
+    var debug = false;
 
     /**
      * Generates the parameters for the java environment to be added during the run of the test case.
@@ -100,7 +101,7 @@ var XLT = function () {
     };
 
     /**
-     * Downloads (asynchronous) Xlt (default version 4.5.4) into the project directory and unpacks it.
+     * Downloads (asynchronous) Xlt (default version 4.5.6) into the project directory and unpacks it.
      *
      * @param {function} callback(error, pathToXlt)
      */
@@ -135,7 +136,7 @@ var XLT = function () {
         if (!fs.existsSync(nodePath.join(baseDir, pathToXLT))) {
             throw new Error('XLT directory could not be found with the given path');
         } else if (!fs.existsSync(testSrcDir)) {
-            console.log(testSrcDir);
+            log(testSrcDir);
             throw new Error('Directory of the java sources could not be found with the given path');
         }
         return true;
@@ -193,15 +194,27 @@ var XLT = function () {
      * @return {Boolean}
      */
     XLT.prototype.runAllTestCases = function (params) {
+        var startDate = new Date().getTime();
         var result = true;
+        var successfulTests = 0;
+        var failedTests = 0;
+        var failedTestsNames = '';
         var files = XLT.prototype.findTestCaseClasses();
         for (var file in files) {
             if (files.hasOwnProperty(file)) {
                 var reg = new RegExp('.*' + targetDir + '\/');
                 var name = files[file].replace(reg, '').replace('.class', '').replace(/\//g, '.');
-                result = XLT.prototype.runSingleTestCase(name, params) && result;
+                var res = XLT.prototype.runSingleTestCase(name, params);
+                result = res  && result;
+                if(res){
+                    successfulTests++;
+                } else {
+                    failedTestsNames += name + ', ';
+                    failedTests++;
+                }
             }
         }
+        logCompleteTestResult(failedTests, successfulTests, failedTestsNames, (new Date().getTime()-startDate));
         return result;
     };
 
@@ -219,27 +232,85 @@ var XLT = function () {
     XLT.prototype.runSingleTestCase = function (path, params) {
         var exec = require('child_process').execSync;
         var command = commandPrefix + 'java ' + generateRunParamsString(params) + ' -cp "' + xltLibPath + ':' + targetDir + ':config" org.junit.runner.JUnitCore ' + path;
-        console.log(command);
+        log(command);
+        var startDate = new Date().getTime();
         try {
             var cli = exec(command).toString();
-            return /OK \(\d* test\)/.test(cli);
+            var res = /OK \(\d* test\)/.test(cli);
+            logSingleTestResult(path, params, res, (new Date().getTime()-startDate));
+            return res;
         }
         catch(err)
         {
+            logSingleTestResult(path, params, false, (new Date().getTime()-startDate));
             return false;
         }
     };
+
+    function log(message, mustLog){
+        if((mustLog || debug) && message){
+            console.log(message);
+        }
+    }
+
+    function logSingleTestResult(name, params, result, time){
+        var output = '== Test script: ' + name + '\n';
+        if(result){
+            output += '== Run was successful.\n';
+        } else {
+            output += '== Run failed!\n';
+        }
+        if(time){
+            output += '== Run took: '+ (parseInt(time)/1000) +'s\n';
+        }
+        var webDriver = params && params.xltWebDriver ? params.xltWebDriver : xltWebDriver;
+        if (webDriver) {
+            output += '== Used WebDriver: ' + webDriver + '\n';
+        } else {
+            output += '== Used WebDriver: default\n';
+        }
+        var width = params && params.xltWidth ? params.xltWidth : xltWidth;
+        if (width) {
+            output += '== Used width: ' + width + '\n';
+        }
+        var height = params && params.xltHeight ? params.xltHeight : xltHeight;
+        if (height) {
+            output += '== Used height: ' + height + '\n';
+        }
+        log(output, true);
+    }
+
+    function logCompleteTestResult(successful, failed, failedTests, time){
+        var output = '== Test result summary \n';
+        output += '== Number successful tests: ' + successful +'\n';
+        output += '== Number of failed test: ' + failed +'\n';
+        if(namesOfFailedTests ){
+            output += '== List of failed test: ' + failedTests + '\n';
+        }
+        if(time){
+            output += '== The complete run took: '+ (parseInt(time)/1000) +'s\n';
+        }
+        log(output, true);
+    }
 
     var maxProcesses = 1;
     var currentProcesses = 0;
     var parallelResult = true;
     var parallelTests = [];
+    var numberOfSuccessfulTests = 0;
+    var numberOfFailedTests = 0;
+    var namesOfFailedTests = '';
+    var runStartTime = new Date().getTime();
 
     function resetParallelTestSettings() {
         maxProcesses = 1;
         currentProcesses = 0;
         parallelResult = true;
         parallelTests = [];
+        numberOfSuccessfulTests = 0;
+        numberOfFailedTests = 0;
+        namesOfFailedTests = '';
+        runStartTime = new Date().getTime();
     }
 
     /**
@@ -310,20 +381,31 @@ var XLT = function () {
             while (currentProcesses < maxProcesses && parallelTests.length > 0) {
                 var test = parallelTests.pop();
                 var reg = new RegExp('.*' + targetDir + '\/');
-                var name = test.path.replace(reg, '').replace('.class', '').replace(/\//g, '.');
-                XLT.prototype.runSingleTestCaseAsync(name, test.params, function (error, res) {
-                    parallelResult = parallelResult && res;
-                    currentProcesses--;
-                    if (error) {
-                        console.log(error);
-                    }
-                    runParallel(callback)
-                });
-                currentProcesses++;
+                var path = test.path.replace(reg, '').replace('.class', '').replace(/\//g, '.');
+                //scoping needed si
+                (function(name) {
+                    XLT.prototype.runSingleTestCaseAsync(name, test.params, function (error, res) {
+                        if(res){
+                            numberOfSuccessfulTests++;
+                        } else {
+                            namesOfFailedTests += name + ', ';
+                            numberOfFailedTests++;
+                        }
+                        parallelResult = parallelResult && res;
+                        currentProcesses--;
+                        if (error) {
+                            log(error, true);
+                        }
+                        runParallel(callback)
+                    });
+                    currentProcesses++;
+                })(path);
+
             }
         } else {
             if (parallelTests.length == 0 && currentProcesses == 0) {
                 if (isFunction(callback)){
+                    logCompleteTestResult(numberOfSuccessfulTests, numberOfFailedTests, namesOfFailedTests, (new Date().getTime()-runStartTime));
                     callback(parallelResult);
                 }
             }
@@ -344,17 +426,22 @@ var XLT = function () {
     XLT.prototype.runSingleTestCaseAsync = function (path, params, callback) {
         var exec = require('child_process').exec;
         var command = commandPrefix + 'java ' + generateRunParamsString(params) + ' -cp "' + xltLibPath + ':' + targetDir + ':config" org.junit.runner.JUnitCore ' + path;
+
+        var startDate = new Date().getTime();
+        log(command);
         exec(command, function (error, stdout, stderr) {
-            console.log(command);
-            console.log(stdout);
+            log(stdout);
             if (error !== null) {
-                console.log('Error: ' + stderr);
+                log('Error: ' + stderr);
+                logSingleTestResult(path, params, false, (new Date().getTime()-startDate));
                 if (isFunction(callback)) {
                     callback(error, false);
                 }
             } else {
+                var res = /OK \(\d* test\)/.test(stdout);
+                logSingleTestResult(path, params, res, (new Date().getTime()-startDate));
                 if (isFunction(callback)) {
-                    callback(null, /OK \(\d* test\)/.test(stdout));
+                    callback(null, res);
                 }
             }
         });
@@ -502,12 +589,11 @@ var XLT = function () {
                 if (XLT.prototype.checkPrerequisites()) {
                     XLT.prototype.clean(true);
                     XLT.prototype.compileAllTestCases();
-                    XLT.prototype.runAllTestCases();
-                    callback();
+                    XLT.prototype.runAllTestCasesParallel(null, callback);
                 }
             }
         });
-    }
+    };
 };
 
 module.exports = new XLT();
