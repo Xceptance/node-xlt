@@ -10,9 +10,9 @@ NodeJS support for Xceptance LoadTest.
   var xlt = require('node-xlt');
   
   // adjust this path to your local installation of Xlt
-  xlt.setOptions({pathToXLT: '../xlt-4.5.4'});
+  xlt.setOptions({pathToXLT: '../xlt-4.6.2'});
   
-  //you can also use our download feature if you have no installation of Xlt
+  // you can also use our download feature if you have no installation of Xlt
   xlt.downloadXlt();
   
   // the next step would be to check if you have java installed

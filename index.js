@@ -20,8 +20,8 @@ var XLT = function () {
     var pathToScriptDir = '';
     var commandPrefix = '';
     var xltWebDriver, xltWidth, xltHeight;
-    var xltVersion = '4.5.6';
-    var pathToXLT = 'lib/xlt-4.5.6';
+    var xltVersion = '4.6.2';
+    var pathToXLT = 'lib/xlt-4.6.2';
 
     //internal
     var xltLibDir = 'lib/*';

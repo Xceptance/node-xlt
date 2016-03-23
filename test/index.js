@@ -53,7 +53,7 @@ describe('#downloadXlt', function () {
         var fun = function () {
             downloadXlt(function (err, res) {
                 should.equal(err, null);
-                res.should.be.equal('test/lib/xlt-4.5.6');
+                res.should.be.equal('test/lib/xlt-4.6.2');
                 done();
             });
         };
@@ -71,7 +71,7 @@ describe('#checkPrerequisites', function () {
     });
 
     it('it awaits an error if the sources directory can\'t be found', function () {
-        setOptions({pathToXLT: 'lib/xlt-4.5.6', testSrcDir: 'notExistingDirectory'});
+        setOptions({pathToXLT: 'lib/xlt-4.6.2', testSrcDir: 'notExistingDirectory'});
         var res = false, fun = function () {
             res = checkPrerequisites();
         };
