@@ -30,6 +30,7 @@ var XLT = function () {
     var sourceFilePath = nodePath.join(baseDir, sourceFileName);
     var libDir = nodePath.join(baseDir, 'lib');
     var debug = false;
+    var classpathSeparator = ("win32" === process.platform) ? ';' : ':';
 
     /**
      * Generates the parameters for the java environment to be added during the run of the test case.
@@ -231,7 +232,7 @@ var XLT = function () {
      */
     XLT.prototype.runSingleTestCase = function (path, params) {
         var exec = require('child_process').execSync;
-        var command = commandPrefix + 'java ' + generateRunParamsString(params) + ' -cp "' + xltLibPath + ':' + targetDir + ':config" org.junit.runner.JUnitCore ' + path;
+        var command = commandPrefix + 'java ' + generateRunParamsString(params) + ' -cp "' + xltLibPath + classpathSeparator + targetDir + classpathSeparator + 'config" org.junit.runner.JUnitCore ' + path;
         log(command);
         var startDate = new Date().getTime();
         try {
@@ -425,7 +426,7 @@ var XLT = function () {
      */
     XLT.prototype.runSingleTestCaseAsync = function (path, params, callback) {
         var exec = require('child_process').exec;
-        var command = commandPrefix + 'java ' + generateRunParamsString(params) + ' -cp "' + xltLibPath + ':' + targetDir + ':config" org.junit.runner.JUnitCore ' + path;
+        var command = commandPrefix + 'java ' + generateRunParamsString(params) + ' -cp "' + xltLibPath + classpathSeparator + targetDir + classpathSeparator + 'config" org.junit.runner.JUnitCore ' + path;
 
         var startDate = new Date().getTime();
         log(command);
