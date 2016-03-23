@@ -214,7 +214,7 @@ var XLT = function () {
                 }
             }
         }
-        logCompleteTestResult(failedTests, successfulTests, failedTestsNames, (new Date().getTime()-startDate));
+        logCompleteTestResult(successfulTests, failedTests, failedTestsNames, (new Date().getTime()-startDate));
         return result;
     };
 
