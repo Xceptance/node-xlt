@@ -237,7 +237,7 @@ var XLT = function () {
         var startDate = new Date().getTime();
         try {
             var cli = exec(command).toString();
-            var res = /OK \(\d* test\)/.test(cli);
+            var res = validateJUnitResult(cli);
             logSingleTestResult(path, params, res, (new Date().getTime()-startDate));
             return res;
         }
@@ -247,6 +247,10 @@ var XLT = function () {
             return false;
         }
     };
+
+    function validateJUnitResult(result){
+        return /OK \(\d* tests?\)/.test(result);
+    }
 
     function log(message, mustLog){
         if((mustLog || debug) && message){
@@ -439,7 +443,7 @@ var XLT = function () {
                     callback(error, false);
                 }
             } else {
-                var res = /OK \(\d* test\)/.test(stdout);
+                var res = validateJUnitResult(stdout);
                 logSingleTestResult(path, params, res, (new Date().getTime()-startDate));
                 if (isFunction(callback)) {
                     callback(null, res);
